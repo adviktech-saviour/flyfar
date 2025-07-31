@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dodge The Obstacles</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            touch-action: manipulation;
+        }
+        #game {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #ffcc00, #ff6600);
+        }
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #000;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #fff;
+            z-index: 10;
+            left: 50%;
+            top: 80%;
+            transform: translate(-50%, -50%);
+        }
+        .obstacle {
+            position: absolute;
+            background: #ff3300;
+            border-radius: 3px;
+            box-shadow: 0 0 20px #ff0000;
+            z-index: 5;
+        }
+        #score {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #000;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #fff;
+            z-index: 20;
+        }
+        #start-screen, #game-over {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            z-index: 30;
+        }
+        button {
+            background: #ff6600;
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            box-shadow: 0 0 15px #ff6600;
+        }
+        h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #ff6600;
+            text-align: center;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            z-index: 20;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,0,0,0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="player"></div>
+        <div id="score">0</div>
+        
+        <div id="controls">
+            <div class="control-btn" id="left-btn">←</div>
+            <div class="control-btn" id="right-btn">→</div>
+        </div>
+        
+        <div id="start-screen">
+            <h1>DODGE<br>THE OBSTACLES</h1>
+            <button id="start-btn">START</button>
+        </div>
+        
+        <div id="game-over" style="display:none">
+            <h1>GAME OVER</h1>
+            <div id="final-score">Score: 0</div>
+            <button id="restart-btn">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+        const game = document.getElementById('game');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        
+        // Game state
+        const state = {
+            running: false,
+            score: 0,
+            speed: 8,
+            player: {
+                x: window.innerWidth / 2,
+                y: window.innerHeight * 0.8,
+                width: 30,
+                height: 30,
+                speed: 20
+            },
+            obstacles: [],
+            keys: {
+                left: false,
+                right: false
+            },
+            lastObstacle: 0,
+            obstacleRate: 800,
+            isMobile: false
+        };
+        
+        // Initialize game
+        function init() {
+            state.running = false;
+            state.score = 0;
+            state.speed = 20;
+            state.player.x = window.innerWidth / 2;
+            state.player.y = window.innerHeight * 0.8;
+            state.obstacles = [];
+            state.obstacleRate = 500;
+
+            
+            // Clear all obstacles
+            document.querySelectorAll('.obstacle').forEach(el => el.remove());
+            
+            // Reset player position
+            player.style.left = `${state.player.x - state.player.width/2}px`;
+            player.style.top = `${state.player.y - state.player.height/2}px`;
+            
+            scoreDisplay.textContent = state.score;
+            startScreen.style.display = 'flex';
+            gameOverScreen.style.display = 'none';
+            
+            // Check if mobile
+            state.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            document.getElementById('controls').style.display = state.isMobile ? 'flex' : 'none';
+        }
+        
+        // Start game
+        function startGame() {
+            state.running = true;
+            startScreen.style.display = 'none';
+            gameLoop();
+        }
+        
+        // Game over
+        function gameOver() {
+            state.running = false;
+            finalScoreDisplay.textContent = `Score: ${state.score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        // Create obstacle
+        function createObstacle() {
+            const types = [
+                { width: 40 + Math.random() * 50, height: 30 }, // Wide
+                { width: 20, height: 40 + Math.random() * 60 }, // Tall
+                { width: 30 + Math.random() * 30, height: 30 + Math.random() * 30 } // Square
+                
+            ];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            const obstacle = document.createElement('div');
+            obstacle.className = 'obstacle';
+            obstacle.style.width = `${type.width}px`;
+            obstacle.style.height = `${type.height}px`;
+            obstacle.style.left = `${Math.random() * (window.innerWidth - type.width)}px`;
+            obstacle.style.top = `-${type.height}px`;
+            game.appendChild(obstacle);
+            
+            state.obstacles.push({
+                element: obstacle,
+                x: parseFloat(obstacle.style.left),
+                y: -type.height,
+                width: type.width,
+                height: type.height
+            });
+        }
+        
+        // Check collision
+        function checkCollision(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!state.running) return;
+            
+            // Move player (only left/right)
+            if (state.keys.left && state.player.x > state.player.width/2) {
+                state.player.x -= state.player.speed;
+            }
+            if (state.keys.right && state.player.x < window.innerWidth - state.player.width/2) {
+                state.player.x += state.player.speed;
+            }
+            
+            // Update player position
+            player.style.left = `${state.player.x - state.player.width/2}px`;
+            player.style.top = `${state.player.y - state.player.height/2}px`;
+            
+            // Move obstacles downward
+            for (let i = state.obstacles.length - 1; i >= 0; i--) {
+                const obstacle = state.obstacles[i];
+                obstacle.y += state.speed;
+                obstacle.element.style.top = `${obstacle.y}px`;
+                
+                // Check collision
+                const playerRect = {
+                    x: state.player.x - state.player.width/2,
+                    y: state.player.y - state.player.height/2,
+                    width: state.player.width,
+                    height: state.player.height
+                };
+                
+                const obstacleRect = {
+                    x: obstacle.x,
+                    y: obstacle.y,
+                    width: obstacle.width,
+                    height: obstacle.height
+                };
+                
+                if (checkCollision(playerRect, obstacleRect)) {
+                    gameOver();
+                    return;
+                }
+                
+                // Remove off-screen obstacles
+                if (obstacle.y > window.innerHeight) {
+                    obstacle.element.remove();
+                    state.obstacles.splice(i, 1);
+                    state.score += 1;
+                    scoreDisplay.textContent = state.score;
+                }
+            }
+            
+            // Increase difficulty
+            state.speed = 12 + Math.floor(state.score / 10);
+            state.obstacleRate = Math.max(300, 800 - state.score * 10);
+            
+            // Generate new obstacles
+            if (Date.now() - state.lastObstacle > state.obstacleRate) {
+                createObstacle();
+                state.lastObstacle = Date.now();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Event listeners
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', init);
+        
+        // Keyboard controls
+        window.addEventListener('keydown', (e) => {
+            if (!state.running) return;
+            if (e.key === 'ArrowLeft' || e.key === 'a') state.keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') state.keys.right = true;
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') state.keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') state.keys.right = false;
+        });
+        
+        // Mobile controls
+        leftBtn.addEventListener('touchstart', () => state.keys.left = true);
+        leftBtn.addEventListener('touchend', () => state.keys.left = false);
+        rightBtn.addEventListener('touchstart', () => state.keys.right = true);
+        rightBtn.addEventListener('touchend', () => state.keys.right = false);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            state.player.x = window.innerWidth / 2;
+            state.player.y = window.innerHeight * 0.8;
+            player.style.left = `${state.player.x - state.player.width/2}px`;
+            player.style.top = `${state.player.y - state.player.height/2}px`;
+        });
+        
+        // Start the game
+        init();
+    </script>
+</body>
+</html>

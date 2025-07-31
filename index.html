@@ -154,7 +154,8 @@
     </div>
 
     <script>
-        // Game elements
+        // Game elements   
+     
         const game = document.getElementById('game');
         const player = document.getElementById('player');
         const scoreDisplay = document.getElementById('score');
@@ -163,6 +164,33 @@
         const finalScoreDisplay = document.getElementById('final-score');
         const leftBtn = document.getElementById('left-btn');
         const rightBtn = document.getElementById('right-btn');
+        const ball = document.getelementbyid('ball');
+           const step = 10;
+        const wallsize = 10;
+     
+        const container = document.queryselector('.game-container');
+
+        document.addeventlistener('keydown', (e) => {
+            const playerrect = player.getboundingclientrect();
+            const containerrect = container.getboundingclientrect();
+
+            // get current position
+            let top = player.offsettop;
+            let left = player.offsetleft;
+            // move depending on key, but check for walls
+            if (e.key === 'arrowleft') {
+                if (left > wallsize) left -= step;
+                    
+            }
+            if (e.key === 'arrowright') {
+                if (left + player.offsetwidth < container.clientwidth - wallsize)
+                    left += step;
+            }
+            // update position
+            player.style.top = `$(top)px`;
+            player.style.left = `$(left)px`;
+        });
+                                
         
         // Game state
         const state = {
@@ -314,8 +342,8 @@
             }
             
             // Increase difficulty
-            state.speed = 12 + Math.floor(state.score / 10);
-            state.obstacleRate = Math.max(300, 800 - state.score * 10);
+            state.speed = 30 + Math.floor(state.score / 10);
+            state.obstacleRate = Math.max(500, 800 - state.score * 20);
             
             // Generate new obstacles
             if (Date.now() - state.lastObstacle > state.obstacleRate) {

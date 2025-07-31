@@ -10,6 +10,32 @@
             font-family: Arial, sans-serif;
             touch-action: manipulation;
         }
+        game-container {
+            width: 600px;
+            height: 400px;
+            position: relative;
+            backgroundcolor: #f0f0f0;
+            overflow: hidden;
+            margin: 50px auto;
+            border: 2px solid #000;
+        }
+        wall {
+            position: absolute;
+            background-color: #222;
+        
+        }
+        left-wall {
+            top: 0;
+            left: 0;
+            width: 10px;
+            height: 100%;
+        }
+        right-wall {
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 100%
+        }
         #game {
             position: absolute;
             top: 0;
@@ -101,6 +127,11 @@
     </style>
 </head>
 <body>
+    <div class="game-container">
+        <div class="wall left-wall"></div>
+        <div class="wall right-wall"></div>
+        <div class="ball" id="ball"></div>
+    </div>
     <div id="game">
         <div id="player"></div>
         <div id="score">0</div>
